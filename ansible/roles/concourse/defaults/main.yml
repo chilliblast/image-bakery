@@ -1,2 +1,30 @@
 ---
 # defaults file for concourse
+amzn2_repos:
+- epel
+
+pip_libraries:
+- botocore
+- boto3
+- docker-compose
+
+uninstall_packages:
+- docker
+- docker-client
+- docker-client-latest
+- docker-common
+- docker-latest
+- docker-latest-logrotate
+- docker-logrotate
+- docker-engine
+
+packages:
+- ca-certificates
+- gcc
+- openssl
+- openvpn
+- python3
+- python3-docker
+
+docker_packages:
+- docker="{{ docker_version }}"

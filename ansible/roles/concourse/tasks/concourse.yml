@@ -1,19 +1,38 @@
 ---
 # Concourse tasks file
-
 # Fetch docker compose file for Concourse Dev
-- name: Download Concourse Dev 
+#- name: Download Concourse Dev docker-compose file
+#  get_url:
+#    force: yes
+#    url: "https://concourse-ci.org/docker-compose.yml"
+#    dest: "/tmp/docker-compose.yml"
+#    mode: 0755
+
+- name: Download Fly CLI
+  become: yes
   get_url:
-    url: "https://concourse-ci.org/docker-compose.yml"
-    dest: "/tmp"
+    force: yes
+    url: "https://github.com/concourse/fly/releases/download/v4.2.5/fly_linux_amd64"
+    dest: /usr/local/bin/fly
+    mode: 0755
 
-- name: Run `docker-compose up` again
+- name: Copy Docker Compose template
+  template:
+    src: docker-compose.yml
+    dest: "/tmp/docker-compose.yml"
+    mode: 0755
+
+- name: Tear down existing services
   docker_compose:
-    project_src: ./
-    build: no
-  register: output
+    project_src: /tmp
+    files:
+    - docker-compose.yml
+    state: absent
 
-- debug:
-    var: output
+- name: Run `docker-compose up`
+  docker_compose:
+    project_src: /tmp
+    files:
+    - docker-compose.yml
 
 - meta: end_play
