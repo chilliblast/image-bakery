@@ -1,0 +1,19 @@
+---
+# Drone tasks file
+#- name: Lookup SSM parameter for Drone CI
+#  debug: msg="{{ lookup('aws_ssm', 'Master' ) }}"
+
+- name: Searching all EFS instances with tag Name = 'drone', in subnet 'subnet-1a2b3c4d' and with security group 'sg-4d3c2b1a'
+  efs_info:
+    tags:
+        Name: Test
+        Role: Drone
+    targets:
+        - subnet-1a2b3c4d
+        - sg-4d3c2b1a
+  register: result
+
+- debug:
+    msg: "{{ result['efs'] }}"
+
+- meta: end_play

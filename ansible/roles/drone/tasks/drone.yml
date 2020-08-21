@@ -1,0 +1,6 @@
+---
+# Drone tasks file
+#- name: Lookup SSM parameter for Drone CI
+#  debug: msg="{{ lookup('aws_ssm', 'Master' ) }}"
+
+- meta: end_play

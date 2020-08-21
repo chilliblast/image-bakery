@@ -1,0 +1,32 @@
+---
+# Concourse tasks file
+# Fetch docker compose file for Concourse Dev
+- name: Download Concourse Dev docker-compose file
+  get_url:
+    force: yes
+    url: "https://concourse-ci.org/docker-compose.yml"
+    dest: "/home/martint/git/ami/image-bakery/docker/concourse/docker-compose.yml"
+    mode: "0755"
+
+- name: Download Fly CLI
+  become: yes
+  get_url:
+    force: yes
+    url: "https://github.com/concourse/fly/releases/download/v4.2.5/fly_linux_amd64"
+    dest: /usr/local/bin/fly
+    mode: "0755"
+
+- name: Tear down existing services
+  docker_compose:
+    project_src: /home/martint/git/ami/image-bakery/docker/concourse
+    files:
+    - docker-compose.yml
+    state: absent
+
+- name: Run `docker-compose up`
+  docker_compose:
+    project_src: /home/martint/git/ami/image-bakery/docker/concourse
+    files:
+    - docker-compose.yml
+
+- meta: end_play

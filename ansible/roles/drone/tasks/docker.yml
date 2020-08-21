@@ -1,0 +1,23 @@
+---
+# Docker tasks file for drone
+- name: Uninstall Old Versions
+  package:
+    name: "{{ item }}"
+    state: absent
+  with_items: "{{ uninstall_packages }}"
+
+- name: Install Docker Engine
+  shell: "amazon-linux-extras install -y {{ item }}"
+  with_items: "{{ docker_packages }}"
+
+- name: Make sure Docker service is running
+  service:
+    enabled: yes
+    name: docker
+    state: started
+
+- name: Add ec2-user to docker group
+  user:
+    append: yes
+    name: ec2-user
+    group: docker

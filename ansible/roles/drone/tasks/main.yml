@@ -1,0 +1,26 @@
+---
+# tasks file for drone
+- name: Enable repo(s)
+  shell: "amazon-linux-extras install -y {{ item }}"
+  with_items: "{{ amzn2_repos }}"
+
+- name: Install list of packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ packages }}"
+
+- name: Install pip libraries
+  pip:
+    name: "{{ pip_libraries }}"
+    extra_args: "--user"
+    state: latest
+
+- name: Lookup EFS vol & mount
+  include: efs.yml
+
+- name: Configure & deploy docker
+  include: docker.yml
+
+- name: Deploy drone
+  include: drone.yml

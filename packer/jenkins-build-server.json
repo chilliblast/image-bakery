@@ -1,0 +1,77 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "aws_region": "eu-west-1",
+    "aws_build_regions": "eu-west-1",
+    "aws_instance_type": "t2.micro",
+    "aws_vpc_id": "{{ env `VPC_ID` }}",
+    "aws_subnet_id": "{{ env `SUBNET_ID` }}",
+    "image_name": "jenkins-build-server",
+    "ssh_username": "ubuntu",
+    "build_author": "{{env `GITLAB_USER_NAME`}}",
+    "build_uuid": "",
+    "build_commit": "{{env `CI_COMMIT_SHA`}}",
+    "version_no": "{{env `VERSION_NO`}}",
+    "os_distribution": "ubuntu",
+    "os_version": "18.04"
+  },
+  "builders": [
+    {
+      "name": "jenkins-build-server",
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `aws_region`}}",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "base-*",
+          "root-device-type": "ebs",
+          "tag:AcceptanceTested": "True",
+          "tag:Distribution": "{{ user `os_distribution` }}",
+          "tag:OS_Version": "{{ user `os_version` }}"
+        },
+        "owners": ["380222987620"],
+        "most_recent": true
+      },
+      "vpc_id": "{{user `aws_vpc_id`}}",
+      "instance_type": "{{user `aws_instance_type`}}",
+      "subnet_id": "{{user `aws_subnet_id`}}",
+      "ssh_username": "{{user `ssh_username`}}",
+      "ami_name": "{{user `image_name`}}-{{user `version_no`}}",
+      "ami_regions": "{{user `aws_build_regions`}}",
+      "ami_users": ["026027971472", "267377876177", "654207618007", "855795370959"],
+      "ssh_pty": "true",
+      "tags": {
+        "Name": "jenkins-build-server-{{user `version_no`}}",
+        "Role": "jenkins-build-server",
+        "BuildDate": "{{isotime}}",
+        "BuildAuthor": "{{user `build_author`}}",
+        "BuildUUID": "{{uuid}}",
+        "GitCommit": "{{user `build_commit`}}",
+        "BaseAMI": "{{.SourceAMIName}}",
+        "BaseAMIId": "{{.SourceAMI}}"
+      },
+      "run_tags": {
+        "Name": "amibuilder-{{ build_name }}-{{user `version_no`}}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "packer/playbook.yml",
+      "groups": "jenkins-build-server",
+      "user": "{{ user  `ssh_username` }}",
+      "ansible_env_vars": [ "ANSIBLE_CONFIG=packer/ansible.cfg" ],
+      "use_proxy": "false"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "jenkins-build-server-manifest.json"
+    }
+  ]
+}

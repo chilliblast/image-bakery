@@ -1,0 +1,15 @@
+---
+# defaults file for jenkins-build-server
+
+version: latest
+packages:
+- build-essential
+- git
+- libssl-dev
+- libncurses-dev
+- libffi-dev
+- libsqlite3-dev
+- libreadline-dev
+- libbz2-dev
+- openjdk-8-jdk
+- zlib1g-dev

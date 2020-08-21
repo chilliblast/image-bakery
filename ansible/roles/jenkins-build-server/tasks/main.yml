@@ -1,0 +1,18 @@
+---
+# tasks file for jenkins-build-server
+
+- name: Install list of packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ packages }}"
+
+- name: Clone AWS ElasticBeanStalk Repo
+  git:
+    repo: https://github.com/aws/aws-elastic-beanstalk-cli-setup.git 
+    dest: /tmp/aws-elastic-beanstalk-cli-setup
+
+- name: Install AWS ElasticBeanStalk CLI
+  shell: ./bundled_installer
+  args:
+    chdir: /tmp/aws-elastic-beanstalk-cli-setup/scripts
