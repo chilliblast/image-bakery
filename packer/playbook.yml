@@ -2,6 +2,7 @@
 - hosts: all
   become: yes
   vars:
+    ansible_python_interpreter: /usr/bin/python
   pre_tasks:
     - name: gather ec2 facts
       action: ec2_metadata_facts
@@ -11,6 +12,8 @@
 - hosts: concourse
   become: yes
   vars:
+#    ansible_python_interpreter: /usr/bin/python3
+    ansible_python_interpreter: /usr/bin/python
     role: web
     docker_version: 17.12.1
   roles:
@@ -19,6 +22,8 @@
 - hosts: drone
   become: yes
   vars:
+#    ansible_python_interpreter: /usr/bin/python3
+    ansible_python_interpreter: /usr/bin/python
     docker_version: 17.12.1
   roles:
     - drone
@@ -45,4 +50,4 @@
     role: web
     docker_version: 17.12.1
   roles:
-    - sandbox
+#    - sandbox

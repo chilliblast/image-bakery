@@ -6,6 +6,7 @@ amzn2_repos:
 pip_libraries:
 - botocore
 - boto3
+- docker
 - docker-compose
 
 uninstall_packages:
@@ -23,8 +24,7 @@ packages:
 - gcc
 - openssl
 - openvpn
-- python3
-- python3-docker
+#- python3
 
 docker_packages:
 - docker="{{ docker_version }}"

@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1598285187,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-0d13b2c0930e06aa1",
+      "packer_run_uuid": "070d2af9-22d7-85ee-4b8f-bb3b3610d268",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "070d2af9-22d7-85ee-4b8f-bb3b3610d268"
+}
