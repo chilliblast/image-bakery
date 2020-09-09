@@ -26,7 +26,25 @@
       "artifact_id": "eu-west-1:ami-0779648c7864844fe",
       "packer_run_uuid": "b3566b95-8c12-3c7e-d64a-acbd19189f20",
       "custom_data": null
+    },
+    {
+      "name": "drone",
+      "builder_type": "amazon-ebs",
+      "build_time": 1598364726,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-079e0fca98d425bc7",
+      "packer_run_uuid": "7f6b4aec-f902-b6d2-ecc1-5b070a1dc058",
+      "custom_data": null
+    },
+    {
+      "name": "drone",
+      "builder_type": "amazon-ebs",
+      "build_time": 1598369994,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-01f41ae86210a926e",
+      "packer_run_uuid": "14b6ae95-eba5-ce1e-af15-0158983be585",
+      "custom_data": null
     }
   ],
-  "last_run_uuid": "b3566b95-8c12-3c7e-d64a-acbd19189f20"
+  "last_run_uuid": "14b6ae95-eba5-ce1e-af15-0158983be585"
 }

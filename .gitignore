@@ -1,0 +1,9 @@
+.DS_Store
+.terraform/
+.idea/
+*.iml
+**/*.tfstate
+**/*.tfstate.backup
+**/robotframework/results
+**/terraform.tfstate.d
+**/terraform.tfstate.*.backup

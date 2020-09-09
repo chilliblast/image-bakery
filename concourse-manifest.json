@@ -8,7 +8,25 @@
       "artifact_id": "eu-west-1:ami-0d13b2c0930e06aa1",
       "packer_run_uuid": "070d2af9-22d7-85ee-4b8f-bb3b3610d268",
       "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1598344363,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-01af945f42a85c531",
+      "packer_run_uuid": "de12db6c-6a3c-6ef6-6823-42a444cc6fde",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1598354812,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-080b5081d6950ce6c",
+      "packer_run_uuid": "c6d70897-c599-07de-690c-c40b05428d41",
+      "custom_data": null
     }
   ],
-  "last_run_uuid": "070d2af9-22d7-85ee-4b8f-bb3b3610d268"
+  "last_run_uuid": "c6d70897-c599-07de-690c-c40b05428d41"
 }

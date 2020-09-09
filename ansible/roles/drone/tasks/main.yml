@@ -1,26 +1,20 @@
 ---
-# tasks file for drone
+# tasks file for Drone
 - name: Enable repo(s)
   shell: "amazon-linux-extras install -y {{ item }}"
   with_items: "{{ amzn2_repos }}"
 
-- name: Install list of packages
+- name: Uninstall Old Versions
   package:
     name: "{{ item }}"
-    state: present
-  with_items: "{{ packages }}"
-
-- name: Install pip libraries
-  pip:
-    name: "{{ pip_libraries }}"
-    extra_args: "--user"
-    state: latest
-
-- name: Lookup EFS vol & mount
-  include: efs.yml
+    state: absent
+  with_items: "{{ uninstall_packages }}"
 
 - name: Configure & deploy docker
   include: docker.yml
 
-- name: Deploy drone
+- name: Deploy Conourse
   include: drone.yml
+
+#- fail: msg="Quitting. This playbook requires Concourse Role to be set!"
+#  when: role is undefined

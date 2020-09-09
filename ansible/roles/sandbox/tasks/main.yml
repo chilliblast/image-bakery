@@ -3,8 +3,11 @@
 - name: Lookup EFS vol & mount
   include: efs.yml
 
-- name: Deploy Conourse
-  include: concourse.yml
-  when: role is defined
+#- name: Deploy Conourse
+#  include: concourse.yml
+#  when: role is defined
 
-- fail: msg="Quitting. This playbook requires Concourse Role to be set!"
+- name: Drone
+  include: drone.yml
+
+#- fail: msg="Quitting. This playbook requires Concourse Role to be set!"

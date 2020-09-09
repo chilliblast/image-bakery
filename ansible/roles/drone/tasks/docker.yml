@@ -1,10 +1,19 @@
 ---
-# Docker tasks file for drone
-- name: Uninstall Old Versions
+# Docker tasks file for Drone
+- name: Install list of packages
+  #dnf:
   package:
     name: "{{ item }}"
-    state: absent
-  with_items: "{{ uninstall_packages }}"
+    state: present
+  with_items: "{{ packages }}"
+
+- name: Install pip libraries
+#  become: no
+  pip:
+    name: "{{ pip_libraries }}"
+    #executable: pip3
+#    extra_args: "--user"
+    state: latest
 
 - name: Install Docker Engine
   shell: "amazon-linux-extras install -y {{ item }}"
@@ -21,3 +30,7 @@
     append: yes
     name: ec2-user
     group: docker
+
+# Reset SSH connection
+- name: Reset ssh connection to allow user changes to affect 'current login user'
+  meta: reset_connection

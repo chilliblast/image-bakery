@@ -3,4 +3,36 @@
 #- name: Lookup SSM parameter for Drone CI
 #  debug: msg="{{ lookup('aws_ssm', 'Master' ) }}"
 
+- name: Generate random key
+  command: "openssl rand -hex 16"
+  register: rand_key
+
+- name: Register random key
+  set_fact:
+    DRONE_RPC_SECRET: "{{ rand_key.stdout }}"
+
+- name: Check random key value
+  debug: msg="{{ DRONE_RPC_SECRET }}"
+
+- name: Copy Docker Compose template
+  template:
+    src: docker-compose.yml
+    dest: "/tmp/docker-compose.yml"
+    mode: 0755
+
+- name: Tear down existing services
+  docker_compose:
+    project_src: /tmp
+    files:
+    - docker-compose.yml
+    state: absent
+
+- name: Run `docker-compose up`
+  docker_compose:
+    project_src: /tmp
+    restarted: true
+    state: present
+    files:
+    - docker-compose.yml
+
 - meta: end_play

@@ -1,11 +1,13 @@
 ---
-# defaults file for drone
+# defaults file for concourse
 amzn2_repos:
 - epel
 
 pip_libraries:
 - botocore
 - boto3
+- docker
+- docker-compose
 
 uninstall_packages:
 - docker
@@ -19,8 +21,10 @@ uninstall_packages:
 
 packages:
 - ca-certificates
+- gcc
 - openssl
 - openvpn
+#- python3
 
 docker_packages:
 - docker="{{ docker_version }}"

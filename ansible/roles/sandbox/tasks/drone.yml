@@ -1,0 +1,17 @@
+---
+# Drone tasks file
+#- name: Lookup SSM parameter for Drone CI
+#  debug: msg="{{ lookup('aws_ssm', 'Master' ) }}"
+
+- name: Generate random key
+  command: "openssl rand -hex 16"
+  register: rand_key
+
+- name: Register random key
+  set_fact:
+    DRONE_RPC_SECRET: "{{ rand_key.stdout }}"
+
+- name: Check random key value
+  debug: msg="{{ DRONE_RPC_SECRET }}"
+
+- meta: end_play

@@ -47,7 +47,8 @@
 - hosts: localhost
   become: no
   vars:
-    role: web
+    ansible_python_interpreter: /usr/bin/python
+#    role: web
     docker_version: 17.12.1
   roles:
-#    - sandbox
+    - sandbox
