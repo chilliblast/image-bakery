@@ -8,34 +8,220 @@
 #    dest: "/tmp/docker-compose.yml"
 #    mode: 0755
 
+- name: Create a unique, non-privileged system user
+  user:
+    name: concourse
+    home: /etc/concourse.d
+    shell: /bin/false
+    createhome: yes
+
+- name: Install list of packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ packages }}"
+
+- name: Download Concourse binary
+  become: no
+  get_url:
+      force: yes
+      url: "https://github.com/concourse/concourse/releases/download/v{{ concourse_version }}/concourse-{{ concourse_version }}-linux-amd64.tgz"
+      dest: /tmp
+      mode: 0755
+      timeout: 30
+
+- name: Extract concourse-{version}-linux-amd64.tgz into /usr/local
+  unarchive:
+    src: /tmp/concourse-{{ concourse_version }}-linux-amd64.tgz
+    dest: /usr/local
+    remote_src: yes
+
+- name: Install pip libraries
+#  become: no
+  pip:
+    name: "{{ pip_libraries }}"
+    #executable: pip3
+#    extra_args: "--user"
+    state: latest
+
+- name: Copying from S3
+  aws_s3:
+    bucket: "{{ bucket }}"
+    object: "{{ item }}"
+    dest: /etc/concourse.d/"{{ role }}"
+    mode: get
+  with_items: "{{ s3_downloads }}"
+
 - name: Download Fly CLI
   become: yes
   get_url:
     force: yes
-    url: "https://github.com/concourse/fly/releases/download/v4.2.5/fly_linux_amd64"
+    #url: "https://github.com/concourse/fly/releases/download/v4.2.5/fly_linux_amd64"
+    url: "https://github.com/concourse/fly/releases/download/v{{ fly_version }}/fly_linux_amd64"
     dest: /usr/local/bin/fly
     mode: 0755
     timeout: 30
 
-- name: Copy Docker Compose template
-  template:
-    src: docker-compose.yml
-    dest: "/tmp/docker-compose.yml"
-    mode: 0755
+# Generate Concourse Specific keys that are unlikely to change during BAU:
+#
+# Session Signing Key: Used by the Web Node for signing & verifying user session tokens
+# SSH Key for Worker Gateway: Used by the Web Node for signing & verifying registration gateway server ("TSA")
+# Authorized Worker Key: Each Worker Node verifies its registration with the web node via a SSH Key
 
-- name: Tear down existing services
-  docker_compose:
-    project_src: /tmp
-    files:
-    - docker-compose.yml
-    state: absent
+- name: Create required dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: concourse
+  with_items: "{{ dirs }}"
 
-- name: Run `docker-compose up`
-  docker_compose:
-    project_src: /tmp
-    restarted: true
-    state: present
-    files:
-    - docker-compose.yml
+# Create files, adding appropriate permissions
+- name: Touch the same file, but add/remove some permissions
+  file:
+    path: "{{ item.path }}"
+    state: touch
+    mode: u+rw,g-rwx,o-rwx
+    owner: concourse
 
-- meta: end_play
+  loop:
+    - { path: "{{ CONCOURSE_SESSION_SIGNING_KEY }}" }
+    - { path: "{{ CONCOURSE_TSA_HOST_KEY }}" }
+    - { path: "{{ CONCOURSE_TSA_AUTHORIZED_KEYS }}" }
+    - { path: "{{ CONCOURSE_WORKER_KEY }}" }
+
+# CONCOURSE_SESSION_SIGNING_KEY
+- name: Generate CONCOURSE_SESSION_SIGNING_KEY
+  command: /usr/local/concourse/bin/concourse generate-key -t rsa -f {{ CONCOURSE_SESSION_SIGNING_KEY }}
+
+# CONCOURSE_TSA_HOST_KEY
+- name: Generate CONCOURSE_TSA_HOST_KEY
+  command: /usr/local/concourse/bin/concourse generate-key -t ssh -f {{ CONCOURSE_TSA_HOST_KEY }}
+
+# WORKER_KEY (this needs to be pushed to AWS Secrets Manager, so the worker nodes can pick it up)
+- name: Generate Authorized Worker key & store in authorized_keys
+  command: /usr/local/concourse/bin/concourse generate-key -t rsa -t ssh -f {{ CONCOURSE_WORKER_KEY }}
+
+- name: Capture worker private key
+  slurp:
+    src: "{{ CONCOURSE_WORKER_KEY }}"
+  register: concourse_worker_key
+
+- name: Push worker private key to SSM (or AWS Secrets Manager)
+  aws_ssm_parameter_store:
+    name: concourse_worker_node_key
+    description: "Concourse Worker Node Private Key"
+    region: "{{ aws_region }}"
+    value: "{{ concourse_worker_key['content'] | b64decode }}"
+
+- name: Copy worker node pub key
+  copy:
+    src: "{{ CONCOURSE_WORKER_KEY }}.pub"
+    dest: "{{ CONCOURSE_TSA_AUTHORIZED_KEYS }}"
+    owner: concourse
+    group: concourse
+    mode: u+rw,g-rwx,o-rwx
+    remote_src: yes
+
+# Lookup Concourse config via SSM Parameter Store
+- name: Lookup Concourse config via SSM Parameter Store
+  set_fact:
+    CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID: "{{ lookup('aws_ssm', 'concourse_bitbucket_cloud_client_id' ) }}"
+    CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET: "{{ lookup('aws_ssm', 'concourse_bitbucket_cloud_client_secret' ) }}"
+    CONCOURSE_POSTGRES_PASSWORD: "{{ lookup('aws_ssm', 'concourse_dev_postgres_password' ) }}"
+    CONCOURSE_ADD_LOCAL_USER: "{{ lookup('aws_ssm', 'concourse_add_local_user' ) }}"
+    CONCOURSE_MAIN_TEAM_LOCAL_USER: "{{ lookup('aws_ssm', 'concourse_main_team_local_user' ) }}"
+  ignore_errors: false
+
+# Update /etc/environment with Concourse file locations
+- name: Update /etc/environment with Concourse file locations
+  become: yes
+  no_log: True
+  blockinfile:
+    path: /etc/environment
+    block: |
+      {{ item.name }}{{ item.value }}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  loop:
+    - { name: CONCOURSE_SESSION_SIGNING_KEY, value: "={{ CONCOURSE_SESSION_SIGNING_KEY }}" }
+    - { name: CONCOURSE_TSA_HOST_KEY, value: "={{ CONCOURSE_TSA_HOST_KEY }}" }
+    - { name: CONCOURSE_TSA_AUTHORIZED_KEYS, value: "={{ CONCOURSE_TSA_AUTHORIZED_KEYS }}" }
+    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID, value: "={{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID }}" }
+    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET, value: "={{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET }}" }
+    - { name: CONCOURSE_POSTGRES_PASSWORD, value: "={{ CONCOURSE_POSTGRES_PASSWORD }}" }
+    - { name: CONCOURSE_ADD_LOCAL_USER, value: "={{ CONCOURSE_ADD_LOCAL_USER }}" }
+    - { name: CONCOURSE_MAIN_TEAM_LOCAL_USER, value: "={{ CONCOURSE_MAIN_TEAM_LOCAL_USER }}" }
+    - { name: CONCOURSE_PEER_ADDRESS, value: "=CONCOURSE_PEER_ADDRESS_PLACEHOLDER" }
+
+- name: Install concourse-web service
+  copy:
+    src: concourse-web.service
+    dest: /etc/systemd/system/concourse-web.service
+
+- name: Install concourse-web target
+  copy:
+    src: concourse-web.target
+    dest: /etc/systemd/system/concourse-web.target
+
+- name: Enable concourse-web service
+  service:
+    name: concourse-web
+    enabled: yes
+ 
+# Lookup Concourse config via SSM Parameter Store
+#- name: Lookup Concourse CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID
+#  set_fact:
+#    CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID: "{{ lookup('aws_ssm', 'CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID' ) }}"
+#  ignore_errors: false
+
+#- name: Lookup Concourse CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET
+#  set_fact:
+#    CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET: "{{ lookup('aws_ssm', 'CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET' ) }}"
+#  ignore_errors: false
+
+#- name: Lookup Concourse CONCOURSE_CLIENT_SECRET
+#  set_fact:
+#    CONCOURSE_CLIENT_SECRET: "{{ lookup('aws_ssm', 'CONCOURSE_CLIENT_SECRET' ) }}"
+#  ignore_errors: false
+
+#- name: Lookup Concourse CONCOURSE_TSA_CLIENT_SECRET
+#  set_fact:
+#    CONCOURSE_TSA_CLIENT_SECRET: "{{ lookup('aws_ssm', 'CONCOURSE_TSA_CLIENT_SECRET' ) }}"
+#  ignore_errors: false
+
+#- name: Add concourse config to /etc/environment
+#  blockinfile:
+#    path: /etc/environment
+#    block: |
+#      {{ item.name }} {{ item.value }}
+#    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+#  loop:
+#    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID, value: "{{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID }}"  }
+#    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET, value: "{{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET }}"  }
+#    - { name: CONCOURSE_CLIENT_SECRET, value: "{{ CONCOURSE_CLIENT_SECRET }}"  }
+#    - { name: CONCOURSE_TSA_CLIENT_SECRET, value: "{{ CONCOURSE_TSA_CLIENT_SECRET }}" }
+
+# --- NOT required at this point
+#- Docker Compose Installation
+#- name: Copy Docker Compose template
+#  template:
+#    src: docker-compose.yml
+#    dest: "/tmp/docker-compose.yml"
+#    mode: 0755
+
+#- name: Tear down existing services
+#  docker_compose:
+#    project_src: /tmp
+#    files:
+#    - docker-compose.yml
+#    state: absent
+
+#- name: Run `docker-compose up`
+#  docker_compose:
+#    project_src: /tmp
+#    restarted: true
+#    state: present
+#    files:
+#    - docker-compose.yml
+
+#- meta: end_play

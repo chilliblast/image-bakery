@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  concourse-web:
+    image: concourse/concourse
+    command: web
+    ports: ["8080:8080"]
+    volumes: ["./keys/web:/concourse-keys"]
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    environment:
+      CONCOURSE_POSTGRES_HOST: "{{ concourse_postgres_host }}"
+      CONCOURSE_POSTGRES_USER: "{{ concourse_postgres_user }}"
+      CONCOURSE_POSTGRES_PASSWORD: "{{ concourse_postgres_password }}"
+      CONCOURSE_POSTGRES_DATABASE: "{{ concourse_postgres_database }}"
+      CONCOURSE_EXTERNAL_URL: https://"{{ concourse_external_url }}"
+      CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID: "{{ concourse_bitbucket_cloud_client_id }}"
+      CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET: "{{ concourse_bitbucket_cloud_client_secret }}"
+      CONCOURSE_MAIN_TEAM_BITBUCKET_CLOUD_TEAM: "{{ concourse_main_bitbucket_cloud_team }}"
+      CONCOURSE_ADD_LOCAL_USER: concourse_add_local_user
+      CONCOURSE_MAIN_TEAM_LOCAL_USER: concourse_main_team_local_user
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"

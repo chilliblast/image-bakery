@@ -1,0 +1,11 @@
+[Unit]
+Description=Concourse CI web process (ATC and TSA)
+
+[Service]
+User=concourse
+Restart=on-failure
+EnvironmentFile=/etc/environment
+ExecStart=/usr/local/concourse/bin/concourse web
+
+[Install]
+WantedBy=multi-user.target

@@ -10,6 +10,9 @@
     state: absent
   with_items: "{{ uninstall_packages }}"
 
+- name: Handle sysctl / proc / modules
+  include: system.yml
+
 - name: Configure & deploy docker
   include: docker.yml
 

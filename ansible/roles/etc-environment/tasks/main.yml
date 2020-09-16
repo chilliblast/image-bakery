@@ -1,0 +1,5 @@
+---
+# tasks file for etc-environment
+
+- name: set-environment
+  include: environment.yml

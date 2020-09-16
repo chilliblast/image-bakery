@@ -1,2 +1,4 @@
 ---
 # defaults file for sandbox
+dirs:
+- /home/martint/keys

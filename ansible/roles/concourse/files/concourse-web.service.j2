@@ -1,0 +1,25 @@
+[Unit]
+Description=Concourse Web
+Requires=etc-environment.target
+After=etc-environment.target
+
+[Service]
+User=concourse
+#needed for Concourse Web script checks
+Environment=SHELL=/bin/bash
+EnvironmentFile=/etc/environment
+ExecStartPre=/usr/local/bin/consul_node_name.sh /etc/consul/conf.d/11-node.json
+ExecStartPre=/usr/local/bin/consul_ec2_config.sh /etc/consul/conf.d/15-ec2.json
+{% if concourse_web %}
+ExecStartPre=/bin/bash -c "aws ssm get-parameter --name ${CONCOURSE_WEB_FQDN} --with-decryption |jq '.+  { "acl": { "tokens": { "master": .Parameter.Value, "agent" : .Parameter.Value } } }  | del(.Parameter)'  >  /etc/
+ExecStartPre=/usr/local/bin/consul_server_config.sh /etc/consul/conf.d/30-server.json
+{% endif %}
+ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul/conf.d
+
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target

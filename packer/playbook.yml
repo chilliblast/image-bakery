@@ -12,11 +12,23 @@
 - hosts: concourse
   become: yes
   vars:
-#    ansible_python_interpreter: /usr/bin/python3
+    ansible_python_interpreter: /usr/bin/python3
     ansible_python_interpreter: /usr/bin/python
+    #bucket: afsl-concourse-ci
+    aws_region: eu-west-1
+    #bucket: afsl-devops-dev-terraform-testing
+    bucket: ire-amazon-s3-bucket-test
+    CONCOURSE_SESSION_SIGNING_KEY: "{{ KEYS_DIRECTORY }}/session_signing_key"
+    CONCOURSE_TSA_HOST_KEY: "{{ KEYS_DIRECTORY }}/tsa_host_key"
+    CONCOURSE_TSA_AUTHORIZED_KEYS: "{{ KEYS_DIRECTORY }}/authorized_worker_keys"
+    CONCOURSE_WORKER_KEY: "{{ KEYS_DIRECTORY }}/worker_key"
+    KEYS_DIRECTORY: /etc/concourse.d/keys
     role: web
+    concourse_version: 6.2.0
     docker_version: 17.12.1
+    fly_version: 4.2.5
   roles:
+    - etc-environment
     - concourse
 
 - hosts: drone
@@ -44,11 +56,16 @@
     - common
     - jenkins-build-server
 
-- hosts: localhost
-  become: no
-  vars:
-    ansible_python_interpreter: /usr/bin/python
+#- hosts: localhost
+#  become: no
+#  vars:
+#    ansible_python_interpreter: /usr/bin/python
+#    CONCOURSE_SESSION_SIGNING_KEY: "{{ KEYS_DIRECTORY }}/session_signing_key"
+#    CONCOURSE_TSA_HOST_KEY: "{{ KEYS_DIRECTORY }}/tsa_host_key"
+#    CONCOURSE_TSA_AUTHORIZED_KEYS: "{{ KEYS_DIRECTORY }}/authorized_worker_keys"
+#    CONCOURSE_WORKER_KEY: "{{ KEYS_DIRECTORY }}/worker_key"
+#    KEYS_DIRECTORY: /home/martint/keys
 #    role: web
-    docker_version: 17.12.1
-  roles:
-    - sandbox
+#    docker_version: 17.12.1
+#  roles:
+#    - sandbox

@@ -1,0 +1,59 @@
+{
+  "builds": [
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600179407,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-001ec9541a9f8cde7",
+      "packer_run_uuid": "83604d68-447a-08ae-5f88-805ae28785d0",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600199577,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-01fc8c99e8efc8ca3",
+      "packer_run_uuid": "c514aa3b-0d56-5c2f-f61c-dbf0cc1d8141",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600206831,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-0766f6d454c4c1918",
+      "packer_run_uuid": "ce58cad7-5a38-34d1-f6ab-1d41817ec7f9",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600248279,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-042b5ab53694ac4d8",
+      "packer_run_uuid": "27441709-c583-3c73-cc02-69339a8e08a9",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600248827,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-09ec57d9651d029a8",
+      "packer_run_uuid": "e3d921d5-de76-d20f-c066-8739797d5add",
+      "custom_data": null
+    },
+    {
+      "name": "concourse",
+      "builder_type": "amazon-ebs",
+      "build_time": 1600252446,
+      "files": null,
+      "artifact_id": "eu-west-1:ami-05dcce46dc9cce77e",
+      "packer_run_uuid": "59ba1222-58e2-5bae-2605-de41600bef86",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "59ba1222-58e2-5bae-2605-de41600bef86"
+}

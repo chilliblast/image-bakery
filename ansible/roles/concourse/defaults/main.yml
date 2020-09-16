@@ -3,11 +3,24 @@
 amzn2_repos:
 - epel
 
+dirs:
+- /etc/concourse.d/{{ role }}
+- "{{ KEYS_DIRECTORY }}"
+- /etc/concourse.d/pipelines
+
 pip_libraries:
+- awscli
 - botocore
 - boto3
 - docker
-- docker-compose
+#- docker-compose
+
+s3_downloads:
+- docker-compose/{{ role }}
+- pipelines/cdp-ecs-pipeline.yaml
+- pipelines/cdp-k8s-pipeline.yaml
+- pipelines/variables.yaml
+- pipelines/zax-test-pipeline.yaml
 
 uninstall_packages:
 - docker
@@ -23,8 +36,9 @@ packages:
 - ca-certificates
 - gcc
 - openssl
-- openvpn
-#- python3
+#- openvpn
+- python3
+- tree
 
 docker_packages:
 - docker="{{ docker_version }}"

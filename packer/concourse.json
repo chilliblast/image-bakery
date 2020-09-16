@@ -7,7 +7,7 @@
     "aws_instance_type": "t2.micro",
     "aws_vpc_id": "{{ env `VPC_ID` }}",
     "aws_subnet_id": "{{ env `SUBNET_ID` }}",
-    "image_name": "concourse",
+    "image_name": "concourse-web",
     "ssh_username": "ec2-user",
     "build_author": "{{env `GITLAB_USER_NAME`}}",
     "build_uuid": "",
@@ -20,8 +20,7 @@
     {
       "name": "concourse",
       "type": "amazon-ebs",
-      "access_key": "{{user `aws_access_key`}}",
-      "secret_key": "{{user `aws_secret_key`}}",
+      "iam_instance_profile": "packer",
       "region": "{{user `aws_region`}}",
       "source_ami_filter": {
         "filters": {
@@ -32,7 +31,7 @@
           "tag:Distribution": "{{ user `os_distribution` }}",
           "tag:OS_Version": "{{ user `os_version` }}"
         },
-        "owners": ["380222987620"],
+        "owners": ["380222987620", "375289495138"],
         "most_recent": true
       },
       "vpc_id": "{{user `aws_vpc_id`}}",
@@ -41,10 +40,10 @@
       "ssh_username": "{{user `ssh_username`}}",
       "ami_name": "{{user `image_name`}}-{{user `version_no`}}",
       "ami_regions": "{{user `aws_build_regions`}}",
-      "ami_users": ["026027971472", "267377876177", "654207618007", "855795370959"],
+      "ami_users": ["380222987620", "375289495138"],
       "ssh_pty": "true",
       "tags": {
-        "Name": "concourse-{{user `version_no`}}",
+        "Name": "concourse-web-{{user `version_no`}}",
         "Role": "concourse",
         "BuildDate": "{{isotime}}",
         "BuildAuthor": "{{user `build_author`}}",
@@ -71,7 +70,7 @@
   "post-processors": [
     {
       "type": "manifest",
-      "output": "concourse-manifest.json"
+      "output": "concourse-web-manifest.json"
     }
   ]
 }

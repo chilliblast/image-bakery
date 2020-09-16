@@ -1,19 +1,19 @@
 ---
 # Docker tasks file for Concourse
-- name: Install list of packages
-  #dnf:
-  package:
-    name: "{{ item }}"
-    state: present
-  with_items: "{{ packages }}"
+#- name: Install list of packages
+#  #dnf:
+#  package:
+#    name: "{{ item }}"
+#    state: present
+#  with_items: "{{ packages }}"
 
-- name: Install pip libraries
+#- name: Install pip libraries
 #  become: no
-  pip:
-    name: "{{ pip_libraries }}"
-    #executable: pip3
+#  pip:
+#    name: "{{ pip_libraries }}"
+#    #executable: pip3
 #    extra_args: "--user"
-    state: latest
+#    state: latest
 
 - name: Install Docker Engine
   shell: "amazon-linux-extras install -y {{ item }}"
@@ -32,5 +32,5 @@
     group: docker
 
 # Reset SSH connection
-- name: Reset ssh connection to allow user changes to affect 'current login user'
+- name: Reset ssh connection to allow user changes to affect 'current login user' (apply docker group membership to current shell)
   meta: reset_connection

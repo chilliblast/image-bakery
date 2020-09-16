@@ -7,7 +7,7 @@
 #  include: concourse.yml
 #  when: role is defined
 
-- name: Drone
-  include: drone.yml
+#- name: Drone
+#  include: drone.yml
 
 #- fail: msg="Quitting. This playbook requires Concourse Role to be set!"

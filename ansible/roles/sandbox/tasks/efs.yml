@@ -1,7 +1,11 @@
 ---
-# Drone tasks file
-#- name: Lookup SSM parameter for Drone CI
-#  debug: msg="{{ lookup('aws_ssm', 'Master' ) }}"
+# Sandbox tasks file
+- name: Create required dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items: "{{ dirs }}"
 
 - name: Searching all EFS instances with tag Name = 'drone', in subnet 'subnet-1a2b3c4d' and with security group 'sg-4d3c2b1a'
   efs_info:
@@ -15,5 +19,84 @@
 #        - sg-4d3c2b1a
   register: result
 
+# Generate Concourse Specific keys that are unlikely to change during BAU:
+#
+# Session Signing Key: Used by the Web Node for signing & verifying user session tokens
+# SSH Key for Worker Gateway: Used by the Web Node for signing & verifying registration gateway server ("TSA")
+# Authorized Worker Key: Each Worker Node verifies its registration with the web node via a SSH Key
+
+# Create files, adding appropriate permissions
+- name: Touch the same file, but add/remove some permissions
+  file:
+    path: "{{ item.path }}"
+    state: touch
+    mode: u+rw,g-rwx,o-rwx
+  loop:
+    - { path: "{{ CONCOURSE_SESSION_SIGNING_KEY }}" }
+    - { path: "{{ CONCOURSE_TSA_HOST_KEY }}" }
+    - { path: "{{ CONCOURSE_TSA_AUTHORIZED_KEYS }}" }
+    - { path: "{{ CONCOURSE_WORKER_KEY }}" }
+
+# CONCOURSE_SESSION_SIGNING_KEY
+- name: Generate CONCOURSE_SESSION_SIGNING_KEY
+  command: /usr/local/concourse/bin/concourse generate-key -t rsa -f {{ CONCOURSE_SESSION_SIGNING_KEY }}
+
+# CONCOURSE_TSA_HOST_KEY
+- name: Generate CONCOURSE_TSA_HOST_KEY
+  command: /usr/local/concourse/bin/concourse generate-key -t ssh -f {{ CONCOURSE_TSA_HOST_KEY }}
+
+# WORKER_KEY
+- name: Generate Authorized Worker key & store in authorized_keys
+  command: /usr/local/concourse/bin/concourse generate-key -t rsa -t ssh -f {{ CONCOURSE_WORKER_KEY }}
+
+- name: Capture worker private key
+  slurp:
+    src: "{{ CONCOURSE_WORKER_KEY }}"
+  register: concourse_worker_key
+
+- name: Push worker private key to SSM (or AWS Secrets Manager)
+  aws_ssm_parameter_store:
+    name: concourse_worker_node_key
+    description: "Concourse Worker Node Private Key"
+    value: "{{ concourse_worker_key['content'] | b64decode }}"
+
+- name: Copy worker node pub key
+  copy:
+    src: "{{ CONCOURSE_WORKER_KEY }}.pub"
+    dest: "{{ CONCOURSE_TSA_AUTHORIZED_KEYS }}"
+    owner: martint
+    group: martint
+    mode: u+rw,g-rwx,o-rwx
+
+# Lookup Concourse config via SSM Parameter Store
+- name: Lookup Concourse config via SSM Parameter Store
+  set_fact:
+    CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID: "{{ lookup('aws_ssm', 'concourse_bitbucket_cloud_client_id' ) }}"
+    CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET: "{{ lookup('aws_ssm', 'concourse_bitbucket_cloud_client_secret' ) }}"
+    CONCOURSE_POSTGRES_PASSWORD: "{{ lookup('aws_ssm', 'concourse_dev_postgres_password' ) }}"
+    CONCOURSE_ADD_LOCAL_USER: "{{ lookup('aws_ssm', 'concourse_add_local_user' ) }}"
+    CONCOURSE_MAIN_TEAM_LOCAL_USER: "{{ lookup('aws_ssm', 'concourse_main_team_local_user' ) }}"
+  ignore_errors: false
+
+# Update /etc/environment with Concourse file locations
+- name: Update /etc/environment with Concourse file locations
+  become: yes
+  blockinfile:
+    path: /etc/environment
+    block: |
+      {{ item.name }}{{ item.value }}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  loop:
+    - { name: CONCOURSE_SESSION_SIGNING_KEY, value: "={{ CONCOURSE_SESSION_SIGNING_KEY }}" }
+    - { name: CONCOURSE_TSA_HOST_KEY, value: "={{ CONCOURSE_TSA_HOST_KEY }}" }
+    - { name: CONCOURSE_TSA_AUTHORIZED_KEYS, value: "={{ CONCOURSE_TSA_AUTHORIZED_KEYS }}" }
+    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID, value: "={{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID }}" }
+    - { name: CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET, value: "={{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_SECRET }}" }
+    - { name: CONCOURSE_POSTGRES_PASSWORD, value: "={{ CONCOURSE_POSTGRES_PASSWORD }}" }
+    - { name: CONCOURSE_ADD_LOCAL_USER, value: "={{ CONCOURSE_ADD_LOCAL_USER }}" }
+    - { name: CONCOURSE_MAIN_TEAM_LOCAL_USER, value: "={{ CONCOURSE_MAIN_TEAM_LOCAL_USER }}" }
+    - { name: CONCOURSE_PEER_ADDRESS, value: "=CONCOURSE_PEER_ADDRESS_PLACEHOLDER" }
+
 - debug:
     msg: "{{ result['efs'] }}"
+    #msg: "{{ CONCOURSE_BITBUCKET_CLOUD_CLIENT_ID }}"
